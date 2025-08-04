@@ -13,26 +13,44 @@ public class MockWebServer implements Runnable {
 
     @Override
     public void run() {
+        ServerSocket serverSocket = null;
+        try {
+            serverSocket = new ServerSocket(port);
+            System.out.println("Mock Web Server running on port " + port + "...");
 
-        // TODO Create a server socket bound to specified port
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
 
-        System.out.println("Mock Web Server running on port " + port + "...");
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
-        while (true) {
-            // TODO Accept incoming client connections
+                String line;
+                while ((line = in.readLine()) != null && !line.isEmpty()) {
+                    System.out.println("[" + port + "] Request: " + line);
+                }
 
-            // TODO Create input and output streams for the client socket
+                String response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+                        + "<html><body>Hello, Web! on Port " + port + "</body></html>";
 
-            // TODO: Read the request from the client using BufferedReader
+                // ✅ ต้องส่ง response ออกไป
+                out.print(response);
+                out.flush();
 
-            // TODO: send a response to the client
-            String response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
-                    + "<html><body>Hello, Web! on Port " + port + "</body></html>";
+                // ✅ ปิด stream และ socket
+                in.close();
+                out.close();
+                clientSocket.close();
+            }
 
-            // TODO: Close the client socket
-
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (serverSocket != null) serverSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-
     }
 
     public static void main(String[] args) {
@@ -42,17 +60,16 @@ public class MockWebServer implements Runnable {
         Thread server2 = new Thread(new MockWebServer(8081));
         server2.start();
 
-        // type any key to stop the server
-        // Wait for any key press to stop the mock web server
+        
         System.out.println("Press any key to stop the server...");
         try {
             System.in.read();
 
-            // Stop the mock web server
-            server1.stop();
+            
             server1.interrupt();
-            server2.stop();
+
             server2.interrupt();
+
             System.out.println("Mock web server stopped.");
             System.exit(0);
         } catch (IOException e) {
